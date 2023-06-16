@@ -1,0 +1,94 @@
+```{r}
+dgp = 'garch'
+monte_carlo_sims = 800
+N = 10000
+mean_present_90 = 0
+mean_present_99 = 0
+empirical_length_90 = rep(NA,monte_carlo_sims)
+empirical_length_99 = rep(NA,monte_carlo_sims)
+l = 16
+
+for (sim_n in 1:monte_carlo_sims) {
+  sim_data = read.csv(file=sprintf('../sim_data/%s/%s_10k_%s.csv', dgp, dgp, sim_n))
+  # Here is the code that collects bootstrap values of
+  # the auto-correlation estimate:
+  nrep <- 600                            # number of bootstrap replications
+  mu.bt_arma <- rep(NA,nrep)              # vessel for the boostrapped values
+  for(irep in 1:nrep) {                   # the bootstrap loop
+    series.bt <- rep(NA,N)                # local vector for a bootstrap replication
+    for(i in 1:ceiling(N/l)) {            # fill the vector with random blocks
+      endpoint <- sample(l:N, size=1)     # by randomly sampling endpoints
+      series.bt[(i-1)*l+1:l] <- sim_data$V1[endpoint-(l:1)+1] # and copying blocks
+    }
+    series.bt <- series.bt[1:N]           # trim overflow when k doesn't divide N
+    mu.bt_arma[irep] <- mean(series.bt)   # the mean estimate
+  }
+    
+  qt_90 = quantile(mu.bt_arma, c(0.1,0.9))
+  qt_99 = quantile(mu.bt_arma, c(0.01,0.99))
+  
+  if (qt_90[['10%']] < 0 & 0 < qt_90[['90%']]) {
+   mean_present_90 = mean_present_90 + 1
+  }
+  
+  if (qt_99[['1%']] < 0 & 0 < qt_99[['99%']]) {
+   mean_present_99 = mean_present_99 + 1
+  }
+  
+  empirical_length_90[sim_n] = abs(qt_90[['10%']] - qt_90[['90%']])
+  empirical_length_99[sim_n] = abs(qt_99[['1%']] - qt_99[['99%']])
+}
+
+mean_empirical_length_90 = mean(empirical_length_90)
+mean_empirical_length_99 = mean(empirical_length_99)
+final_percentage_90 = mean_present_90 / monte_carlo_sims
+final_percentage_99 = mean_present_99 / monte_carlo_sims
+
+```
+
+```{r}
+library(tseriesEntropy)
+```
+
+
+```{r}
+dgp = 'garch'
+monte_carlo_sims = 800
+N = 10000
+replicates = 600
+mean_present_90 = 0
+mean_present_99 = 0
+empirical_length_90 = rep(NA,monte_carlo_sims)
+empirical_length_99 = rep(NA,monte_carlo_sims)
+
+for (sim_n in 1:monte_carlo_sims) {
+  sim_data = read.csv(file=sprintf('../sim_data/%s/%s_10k_%s.csv', dgp, dgp, sim_n))
+  sieve_boot = surrogate.AR(sim_data$V1, order.max = 78, nsurr=replicates)
+  
+  sieve_boot_means = rep(NA,replicates)
+
+  for(row in 1:replicates) {
+    sieve_boot_means[row] = mean(sieve_boot[["surr"]][,row])
+  }
+    
+  qt_90 = quantile(sieve_boot_means, c(0.1,0.9))
+  qt_99 = quantile(sieve_boot_means, c(0.01,0.99))
+  
+  if (qt_90[['10%']] < 0 & 0 < qt_90[['90%']]) {
+   mean_present_90 = mean_present_90 + 1
+  }
+  
+  if (qt_99[['1%']] < 0 & 0 < qt_99[['99%']]) {
+   mean_present_99 = mean_present_99 + 1
+  }
+  
+  empirical_length_90[sim_n] = abs(qt_90[['10%']] - qt_90[['90%']])
+  empirical_length_99[sim_n] = abs(qt_99[['1%']] - qt_99[['99%']])
+}
+
+mean_empirical_length_90 = mean(empirical_length_90)
+mean_empirical_length_99 = mean(empirical_length_99)
+final_percentage_90 = mean_present_90 / monte_carlo_sims
+final_percentage_99 = mean_present_99 / monte_carlo_sims
+
+```

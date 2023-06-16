@@ -1,0 +1,60 @@
+```{r}
+# ARMA simulation
+# We create some artificial data:
+
+# MA model
+arma.model = list(ma=0.9)
+
+# AR model
+arma.model = list(ar=0.9)
+
+# ARMA model
+arma.model = list(ar=0.9, ma=0.9)
+
+N = 10000
+
+for (i in 1:1) {
+  series_arma_10k = arima.sim(model=arma.model, n=N, n.start=2)
+  write.csv(series_arma_10k, sprintf('../sim_data/ma/ma_10k_%s.csv',i))
+}
+
+```
+
+```{r}
+library(rugarch)
+```
+
+
+```{r}
+# GARCH simulation
+# We create some artificial data:
+garch.model = ugarchspec(variance.model = list(garchOrder=c(1,1)), 
+                          mean.model = list(armaOrder=c(0,0)),
+                          fixed.pars=list(mu = 0, omega=0.1, 
+                                          alpha1=0.1, beta1 = 0.8))
+N = 10000
+
+for (i in 1:800) {
+  series_garch_full = ugarchpath(garch.model, n.sim=N)
+  series_garch = series_garch_full@path$seriesSim
+  write.csv(series_garch, sprintf('../sim_data/garch/garch_10k_%s.csv',i))
+}
+```
+
+```{r}
+library(arfima)
+```
+
+```{r}
+# FARIMA simulation
+# We create some artificial data:
+farima.model = list(phi = 0.5, dfrac = 0.25, theta = -0.8)
+N = 10000
+
+for (i in 1:800) {
+  series_farima = arfima.sim(N, model = farima.model)
+  write.csv(series_garch, sprintf('../sim_data/farima/farima_10k_%s.csv',i))
+}
+
+
+```
